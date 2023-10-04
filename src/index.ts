@@ -80,6 +80,9 @@ const processAndUploadFile = async (
       .on("start", (commandLine) =>
         console.log("Spawned Ffmpeg with command: " + commandLine)
       )
+      .on("progress", (progress) => {
+        console.log(`Processing: ${progress.percent}% done`);
+      })
       .on("end", async () => {
         try {
           const file = Bun.file(outputFilePath);
