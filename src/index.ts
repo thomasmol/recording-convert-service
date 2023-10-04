@@ -72,18 +72,24 @@ const processAndUploadFile = async (
   webhookUrl?: string
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    let startTime = Date.now();
+    let endTime = Date.now();
     const command = ffmpeg(signedUrl);
     command
       .audioBitrate(128)
       .noVideo()
       .format("mp3")
-      .on("start", (commandLine) =>
-        console.log("Spawned Ffmpeg with command: " + commandLine)
-      )
+      .on("start", (commandLine) => {
+        console.log("Spawned Ffmpeg with command: " + commandLine);
+      })
       .on("progress", (progress) => {
-        console.log(`Processing: ${progress.percent}% done`);
+        if (progress.percent > 0) {
+          console.log(`Processing: ${Math.round(progress.percent)}% done`);
+        }
       })
       .on("end", async () => {
+        endTime = Date.now();
+        console.log(`Finished processing in ${endTime - startTime}ms, now uploading`);
         try {
           const file = Bun.file(outputFilePath);
           const arrBuffer = await file.arrayBuffer();
