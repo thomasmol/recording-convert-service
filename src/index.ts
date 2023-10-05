@@ -29,8 +29,7 @@ app
       message: "Hello World",
       bunVersion: Bun.version,
     };
-  })
-  .listen(3000);
+  });
 
 app
   .post("/", async (context) => {
@@ -55,8 +54,7 @@ app
       const endTime = Date.now();
       return { message: `Job error after ${endTime - startTime}ms`, error };
     }
-  })
-  .listen(3000);
+  });
 
 app
   .post("/async", async (context) => {
@@ -73,10 +71,9 @@ app
     // start converting but don't wait
     processAndUploadFile(signedUrl, outputFilePath, webhookUrl);
     return { message: "Job started" };
-  })
-  .listen(3000);
+  });
 
-app.listen(3000);
+app.listen(process.env.PORT || 3000);
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
