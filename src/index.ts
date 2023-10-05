@@ -21,6 +21,14 @@ const s3Client: S3Client = new S3Client(awsConfig);
 
 const app = new Elysia();
 
+app.get("/", async () => {
+  return {
+    app: "Convert Service",
+    message: "Hello World",
+    bunVersion: Bun.version,
+  };
+});
+
 app.post("/", async (context) => {
   const { fileKey } = context.body as any;
   const s3command = new GetObjectCommand({
@@ -89,7 +97,9 @@ const processAndUploadFile = async (
       })
       .on("end", async () => {
         endTime = Date.now();
-        console.log(`Finished processing in ${endTime - startTime}ms, now uploading`);
+        console.log(
+          `Finished processing in ${endTime - startTime}ms, now uploading`
+        );
         try {
           const file = Bun.file(outputFilePath);
           const arrBuffer = await file.arrayBuffer();
