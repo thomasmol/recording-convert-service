@@ -19,55 +19,62 @@ const awsConfig: S3ClientConfig = {
 
 const s3Client: S3Client = new S3Client(awsConfig);
 
-const app = new Elysia();
-
-app.get("/", async () => {
-  return {
-    app: "Convert Service",
-    message: "Hello World",
-    bunVersion: Bun.version,
-  };
+const app = new Elysia().onError(({ code, error }) => {
+  return new Response(error.toString());
 });
+app
+  .get("/", async () => {
+    return {
+      app: "Convert Service",
+      message: "Hello World",
+      bunVersion: Bun.version,
+    };
+  })
+  .listen(3000);
 
-app.post("/", async (context) => {
-  const { fileKey } = context.body as any;
-  const s3command = new GetObjectCommand({
-    Bucket: Bun.env.AWS_S3_INPUT_BUCKET,
-    Key: fileKey,
-  });
-  const signedUrl = await getSignedUrl(s3Client, s3command, {
-    expiresIn: 60 * 10,
-  });
-  // if filekey is anything but mp3, convert to mp3
-  const outputFilePath = fileKey.replace(/\.[^/.]+$/, ".mp3");
+app
+  .post("/", async (context) => {
+    const { fileKey } = context.body as any;
+    const s3command = new GetObjectCommand({
+      Bucket: Bun.env.AWS_S3_INPUT_BUCKET,
+      Key: fileKey,
+    });
+    const signedUrl = await getSignedUrl(s3Client, s3command, {
+      expiresIn: 60 * 10,
+    });
+    // if filekey is anything but mp3, convert to mp3
+    const outputFilePath = fileKey.replace(/\.[^/.]+$/, ".mp3");
 
-  // start converting and wait
-  const startTime = Date.now();
-  try {
-    await processAndUploadFile(signedUrl, outputFilePath);
-    const endTime = Date.now();
-    return { message: `Job finished in ${endTime - startTime}ms` };
-  } catch (error) {
-    const endTime = Date.now();
-    return { message: `Job error after ${endTime - startTime}ms`, error };
-  }
-});
+    // start converting and wait
+    const startTime = Date.now();
+    try {
+      await processAndUploadFile(signedUrl, outputFilePath);
+      const endTime = Date.now();
+      return { message: `Job finished in ${endTime - startTime}ms` };
+    } catch (error) {
+      const endTime = Date.now();
+      return { message: `Job error after ${endTime - startTime}ms`, error };
+    }
+  })
+  .listen(3000);
 
-app.post("/async", async (context) => {
-  const { fileKey, webhookUrl } = context.body as any;
-  const s3command = new GetObjectCommand({
-    Bucket: Bun.env.AWS_S3_INPUT_BUCKET,
-    Key: fileKey,
-  });
-  const signedUrl = await getSignedUrl(s3Client, s3command, {
-    expiresIn: 60 * 10,
-  });
-  // if filekey is anything but mp3, convert to mp3
-  const outputFilePath = fileKey.replace(/\.[^/.]+$/, ".mp3");
-  // start converting but don't wait
-  processAndUploadFile(signedUrl, outputFilePath, webhookUrl);
-  return { message: "Job started" };
-});
+app
+  .post("/async", async (context) => {
+    const { fileKey, webhookUrl } = context.body as any;
+    const s3command = new GetObjectCommand({
+      Bucket: Bun.env.AWS_S3_INPUT_BUCKET,
+      Key: fileKey,
+    });
+    const signedUrl = await getSignedUrl(s3Client, s3command, {
+      expiresIn: 60 * 10,
+    });
+    // if filekey is anything but mp3, convert to mp3
+    const outputFilePath = fileKey.replace(/\.[^/.]+$/, ".mp3");
+    // start converting but don't wait
+    processAndUploadFile(signedUrl, outputFilePath, webhookUrl);
+    return { message: "Job started" };
+  })
+  .listen(3000);
 
 app.listen(3000);
 console.log(
@@ -159,3 +166,5 @@ const processAndUploadFile = async (
       .save(outputFilePath);
   });
 };
+
+export { app };
